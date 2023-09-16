@@ -381,6 +381,30 @@ function adjustElementPosition(element) {
   element.setCoords();
 }
 
+function setPieceGuideEvent(island, group) {
+  let lastTouchTime = 0;
+  group.on("mousedown", (event) => {
+    document.getElementById("guide").replaceChildren();
+    const now = Date.now();
+    if (now - lastTouchTime < 200) {
+      const e = event.e;
+      const touch = (e instanceof TouchEvent) ? e.touches[0] : e;
+      const tx = touch.clientX;
+      const ty = touch.clientY - 30;
+      const id = getStateId(island);
+      const stateName = stateNames[id];
+      const html = `
+        <div class="tooltip show" role="tooltip"
+          style="position:absolute; inset:0px auto auto 0px; transform:translate(${tx}px,${ty}px);">
+          <div class="tooltip-inner">${stateName}</div>
+        </div>
+      `;
+      document.getElementById("guide").innerHTML = html;
+    }
+    lastTouchTime = now;
+  });
+}
+
 function setMovable(island, svg, course) {
   new fabric.loadSVGFromString(svg.outerHTML, (objects, options) => {
     const group = fabric.util.groupSVGElements(objects, options);
@@ -400,6 +424,7 @@ function setMovable(island, svg, course) {
     canvas.add(group);
 
     if (group.selectable) {
+      setPieceGuideEvent(island, group);
       group.on("modified", () => {
         playAudio("modified");
         if (checkPosition(island, group)) {
@@ -411,6 +436,7 @@ function setMovable(island, svg, course) {
       });
     } else {
       const wrapper = addControlRect(group, course);
+      setPieceGuideEvent(island, wrapper);
       wrapper.on("modified", () => {
         playAudio("modified");
         group.set("angle", group.angle + wrapper.angle);
