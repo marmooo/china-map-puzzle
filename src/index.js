@@ -384,7 +384,8 @@ function adjustElementPosition(element) {
 function setPieceGuideEvent(island, group) {
   let lastTouchTime = 0;
   group.on("mousedown", (event) => {
-    document.getElementById("guide").replaceChildren();
+    const pieceGuide = document.getElementById("pieceGuide");
+    if (pieceGuide) pieceGuide.remove();
     const now = Date.now();
     if (now - lastTouchTime < 200) {
       const e = event.e;
@@ -394,12 +395,12 @@ function setPieceGuideEvent(island, group) {
       const id = getStateId(island);
       const stateName = stateNames[id];
       const html = `
-        <div class="tooltip show" role="tooltip"
+        <div id="pieceGuide" class="tooltip show" role="tooltip"
           style="position:absolute; inset:0px auto auto 0px; transform:translate(${tx}px,${ty}px);">
           <div class="tooltip-inner">${stateName}</div>
         </div>
       `;
-      document.getElementById("guide").innerHTML = html;
+      document.getElementById("guide").insertAdjacentHTML("beforeend", html);
     }
     lastTouchTime = now;
   });
@@ -510,6 +511,71 @@ function startGame() {
   startTime = Date.now();
 }
 
+function setMapGuideMouseEvent(canvas) {
+  let lastTouchTime = 0;
+  canvas.on("mouse:down", (event) => {
+    const now = Date.now();
+    if (now - lastTouchTime < 200) {
+      if (!event.target) {
+        const e = event.e;
+        const islands = findPieceNodes(e.offsetX, e.offsetY);
+        islands.forEach((island) => setMapGuideTooltip(e, island));
+      }
+    }
+    lastTouchTime = now;
+  });
+}
+
+function setMapGuideTouchEvent(canvas) {
+  let lastTouchTime = 0;
+  canvas.wrapperEl.addEventListener("touchstart", (event) => {
+    const now = Date.now();
+    if (now - lastTouchTime < 200) {
+      const touch = event.touches[0];
+      const target = canvas.findTarget(touch);
+      if (!target) {
+        const rect = map.getBoundingClientRect();
+        const offsetX = touch.clientX - globalThis.scrollX - rect.left;
+        const offsetY = touch.clientY - globalThis.scrollY - rect.top;
+        const islands = findPieceNodes(offsetX, offsetY);
+        islands.forEach((island) => setMapGuideTooltip(touch, island));
+      }
+    }
+    lastTouchTime = now;
+  });
+}
+
+function findPieceNodes(offsetX, offsetY) {
+  const candidates = map.contentDocument.elementsFromPoint(offsetX, offsetY);
+  const islands = candidates.map((node) => {
+    if (node.tagName == "svg") return false;
+    if (node.classList.contains("main")) return node;
+    const parentNode = node.parentNode;
+    if (parentNode.classList.contains("main")) return parentNode;
+    return false;
+  }).filter((node) => node);
+  return islands;
+}
+
+function setMapGuideTooltip(event, island) {
+  const tx = event.clientX;
+  const ty = event.clientY - 30;
+  const id = getStateId(island);
+  const stateName = stateNames[id];
+  const html = `
+    <div class="tooltip show" role="tooltip"
+      style="position:absolute; inset:0px auto auto 0px; transform:translate(${tx}px,${ty}px);">
+      <div class="tooltip-inner">${stateName}</div>
+    </div>
+  `;
+  const guide = document.getElementById("guide");
+  guide.insertAdjacentHTML("beforeend", html);
+  const tooltip = guide.lastElementChild;
+  tooltip.onclick = () => {
+    tooltip.remove();
+  };
+}
+
 function initCanvas() {
   const rect = map.getBoundingClientRect();
   const canvas = new fabric.Canvas("canvas", {
@@ -518,6 +584,11 @@ function initCanvas() {
     width: rect.width,
     height: rect.height,
   });
+  if (fabric.isTouchSupported) {
+    setMapGuideTouchEvent(canvas);
+  } else {
+    setMapGuideMouseEvent(canvas);
+  }
   canvas.selection = false;
   // canvas.on("before:selection:cleared", (event) => {
   //   adjustElementPosition(event.target);
