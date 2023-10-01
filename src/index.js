@@ -531,7 +531,7 @@ function setMapGuideTouchEvent(canvas) {
   canvas.wrapperEl.addEventListener("touchstart", (event) => {
     const now = Date.now();
     if (now - lastTouchTime < 200) {
-      const touch = event.touches[0];
+      const touch = event.changedTouches[0];
       const target = canvas.findTarget(touch);
       if (!target) {
         const rect = map.getBoundingClientRect();
