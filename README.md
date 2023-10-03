@@ -12,6 +12,7 @@ bash build.sh
 
 - [Japan Map Puzzle](https://marmooo.github.io/japan-map-puzzle/)
 - [USA Map Puzzle](https://marmooo.github.io/usa-map-puzzle/)
+- [India Map Puzzle](https://marmooo.github.io/india-map-puzzle/)
 
 ## Attribution
 
