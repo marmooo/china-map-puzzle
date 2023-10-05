@@ -390,8 +390,8 @@ function setPieceGuideEvent(island, group) {
     if (now - lastTouchTime < 200) {
       const e = event.e;
       const touch = (e instanceof TouchEvent) ? e.touches[0] : e;
-      const tx = touch.clientX;
-      const ty = touch.clientY - 16;
+      const tx = touch.pageX;
+      const ty = touch.pageY - 30;
       const id = getStateId(island);
       const stateName = stateNames[id];
       const html = `
@@ -535,8 +535,8 @@ function setMapGuideTouchEvent(canvas) {
       const target = canvas.findTarget(touch);
       if (!target) {
         const rect = map.getBoundingClientRect();
-        const offsetX = touch.clientX - globalThis.scrollX - rect.left;
-        const offsetY = touch.clientY - globalThis.scrollY - rect.top;
+        const offsetX = touch.pageX - rect.left;
+        const offsetY = touch.pageY - rect.top;
         const islands = findPieceNodes(offsetX, offsetY);
         islands.forEach((island) => setMapGuideTooltip(touch, island));
       }
@@ -558,8 +558,8 @@ function findPieceNodes(offsetX, offsetY) {
 }
 
 function setMapGuideTooltip(event, island) {
-  const tx = event.clientX;
-  const ty = event.clientY - 16;
+  const tx = event.pageX;
+  const ty = event.pageY - 30;
   const id = getStateId(island);
   const stateName = stateNames[id];
   const html = `
