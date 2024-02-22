@@ -353,7 +353,7 @@ function setCorrectPiece(island) {
     playAudio("correctAll");
     addScoreText();
   } else {
-    playAudio("correct");
+    playAudio("correct", 0.3);
   }
   const id = getStateId(island);
   const stateName = stateNames[id];
