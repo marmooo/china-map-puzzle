@@ -3,7 +3,7 @@ import svgpath from "https://cdn.jsdelivr.net/npm/svgpath@2.6.0/+esm";
 const htmlLang = document.documentElement.lang;
 const ttsLang = getTTSLang(htmlLang);
 let correctCount = 0;
-const audioContext = new AudioContext();
+const audioContext = new globalThis.AudioContext();
 const audioBufferCache = {};
 loadAudio("modified", "/china-map-puzzle/mp3/decision50.mp3");
 loadAudio("correct", "/china-map-puzzle/mp3/correct3.mp3");
