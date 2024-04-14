@@ -1,4 +1,4 @@
-const CACHE_NAME = "2024-03-22 00:00";
+const CACHE_NAME = "2024-04-15 01:30";
 const urlsToCache = [
   "/china-map-puzzle/",
   "/china-map-puzzle/ja/",
@@ -10,7 +10,6 @@ const urlsToCache = [
   "/china-map-puzzle/mp3/correct3.mp3",
   "/china-map-puzzle/favicon/favicon.svg",
   "https://cdn.jsdelivr.net/npm/fabric@5.3.1/dist/fabric.min.js",
-  "https://cdn.jsdelivr.net/npm/svgpath@2.6.0/+esm",
 ];
 
 self.addEventListener("install", (event) => {
