@@ -1,3 +1,11 @@
+import {
+  Canvas,
+  Group,
+  loadSVGFromString,
+  Rect,
+  Text,
+  util,
+} from "https://cdn.jsdelivr.net/npm/fabric@6.6.1/+esm";
 import svgpath from "https://cdn.jsdelivr.net/npm/svgpath@2.6.0/+esm";
 
 const htmlLang = document.documentElement.lang;
@@ -218,7 +226,7 @@ function addStateText(stateName) {
   clearTimeout(stateTimer);
   canvas.remove(stateText);
   const fontSize = canvas.width / stateTextLength;
-  stateText = new fabric.Text(stateName, {
+  stateText = new Text(stateName, {
     fontSize: fontSize,
     fontFamily: "serif",
     left: canvas.width / 2,
@@ -229,7 +237,7 @@ function addStateText(stateName) {
     fill: "blue",
   });
   canvas.add(stateText);
-  canvas.sendToBack(stateText);
+  canvas.sendObjectToBack(stateText);
   stateTimer = setTimeout(() => {
     canvas.remove(stateText);
   }, 2000);
@@ -310,7 +318,7 @@ function addControlRect(group, grade) {
   group.setCoords();
   const rect = group.getBoundingRect();
   const rectLength = Math.max(rect.width, rect.height);
-  const controlRect = new fabric.Rect({
+  const controlRect = new Rect({
     originX: "center",
     originY: "center",
     left: group.left,
@@ -322,13 +330,15 @@ function addControlRect(group, grade) {
   });
   canvas.add(controlRect);
 
-  const wrapper = new fabric.Group([controlRect, group], {
+  const wrapper = new Group([controlRect, group], {
     originX: "center",
     originY: "center",
     width: rectLength,
     height: rectLength,
     opacity: group.opacity,
     transparentCorners: false,
+    borderColor: "blue",
+    cornerColor: "blue",
     cornerStyle: "circle",
   });
   if (grade < 9) {
@@ -351,7 +361,7 @@ function addScoreText() {
   const time = (((Date.now() - startTime) * 1000) / 1000000).toFixed(3);
   const text = `${time} sec!`;
   const fontSize = canvas.width / 8;
-  scoreText = new fabric.Text(text, {
+  scoreText = new Text(text, {
     fontSize: fontSize,
     left: canvas.width / 2,
     top: canvas.height / 2,
@@ -362,7 +372,7 @@ function addScoreText() {
   });
   setTimeout(() => {
     canvas.add(scoreText);
-    canvas.sendToBack(scoreText);
+    canvas.sendObjectToBack(scoreText);
   }, 2000);
 }
 
@@ -426,61 +436,53 @@ function setPieceGuideEvent(island, group) {
   });
 }
 
-function setMovable(island, svg, grade) {
-  new fabric.loadSVGFromString(svg.outerHTML, (objects, options) => {
-    const group = fabric.util.groupSVGElements(objects, options);
-    group.set({
-      left: getRandomInt(0, canvas.width / 2),
-      top: getRandomInt(0, canvas.height / 2),
-    });
-    group.set({
-      left: group.left + group.width / 2,
-      top: group.top + group.height / 2,
-      originX: "center",
-      originY: "center",
-      transparentCorners: false,
-      cornerStyle: "circle",
-    });
-    setMovableOption(group, grade);
-    canvas.add(group);
-
-    if (group.selectable) {
-      setPieceGuideEvent(island, group);
-      group.on("modified", () => {
-        playAudio("modified");
-        if (checkPosition(island, group)) {
-          canvas.remove(group);
-          setCorrectPiece(island);
-        } else {
-          adjustElementPosition(group);
-        }
-      });
-    } else {
-      const wrapper = addControlRect(group, grade);
-      setPieceGuideEvent(island, wrapper);
-      wrapper.on("modified", () => {
-        playAudio("modified");
-        group.set("angle", group.angle + wrapper.angle);
-        group.setCoords();
-        const rect = group.getBoundingRect();
-        const rectLength = Math.max(rect.width, rect.height);
-        wrapper.set({
-          angle: 0,
-          width: rectLength,
-          height: rectLength,
-        });
-        if (checkSpinnedPosition(island, wrapper, group)) {
-          wrapper.getObjects().forEach((obj) => {
-            canvas.remove(obj);
-          });
-          canvas.remove(wrapper);
-          setCorrectPiece(island);
-        } else {
-          adjustElementPosition(wrapper);
-        }
-      });
-    }
+async function setMovable(island, svg, grade) {
+  const result = await loadSVGFromString(svg.outerHTML);
+  const group = util.groupSVGElements(result.objects, result.options);
+  group.set({
+    left: getRandomInt(0, canvas.width / 2),
+    top: getRandomInt(0, canvas.height / 2),
   });
+  group.set({
+    left: group.left + group.width / 2,
+    top: group.top + group.height / 2,
+    originX: "center",
+    originY: "center",
+    transparentCorners: false,
+    borderColor: "blue",
+    cornerColor: "blue",
+    cornerStyle: "circle",
+  });
+  setMovableOption(group, grade);
+  canvas.add(group);
+
+  if (group.selectable) {
+    setPieceGuideEvent(island, group);
+    group.on("mouseup", () => {
+      playAudio("modified");
+      if (checkPosition(island, group)) {
+        canvas.remove(group);
+        setCorrectPiece(island);
+      } else {
+        adjustElementPosition(group);
+      }
+    });
+  } else {
+    const wrapper = addControlRect(group, grade);
+    setPieceGuideEvent(island, wrapper);
+    wrapper.on("mouseup", () => {
+      playAudio("modified");
+      if (checkSpinnedPosition(island, wrapper, group)) {
+        wrapper.getObjects().forEach((obj) => {
+          canvas.remove(obj);
+        });
+        canvas.remove(wrapper);
+        setCorrectPiece(island);
+      } else {
+        adjustElementPosition(wrapper);
+      }
+    });
+  }
 }
 
 function getSVGScale(map, doc) {
@@ -490,17 +492,17 @@ function getSVGScale(map, doc) {
   return rect.width / Number(width);
 }
 
-function shuffleSVG() {
+async function shuffleSVG() {
   canvas.clear();
   const grade = document.getElementById("gradeOption").selectedIndex;
   const doc = map.contentDocument;
   const scale = getSVGScale(map, doc);
   const states = doc.querySelectorAll(".main");
-  states.forEach((state) => {
+  for (const state of states) {
     state.removeAttribute("fill");
     const svg = getPieceSvg(state, scale);
-    setMovable(state, svg, grade);
-  });
+    await setMovable(state, svg, grade);
+  }
   switch (grade % 3) {
     case 0:
       states.forEach((state) => {
@@ -523,10 +525,10 @@ function shuffleSVG() {
   }
 }
 
-function startGame() {
+async function startGame() {
   if (!canvas) canvas = initCanvas();
   canvas.remove(scoreText);
-  shuffleSVG();
+  await shuffleSVG();
   correctCount = 0;
   startTime = Date.now();
 }
@@ -598,13 +600,13 @@ function setMapGuideTooltip(event, island) {
 
 function initCanvas() {
   const rect = map.getBoundingClientRect();
-  const canvas = new fabric.Canvas("canvas", {
+  const canvas = new Canvas("canvas", {
     left: rect.left,
     top: rect.top,
     width: rect.width,
     height: rect.height,
   });
-  if (fabric.isTouchSupported) {
+  if (navigator.maxTouchPoints > 0) {
     setMapGuideTouchEvent(canvas);
   } else {
     setMapGuideMouseEvent(canvas);
