@@ -7,9 +7,11 @@ import {
   util,
 } from "https://cdn.jsdelivr.net/npm/fabric@6.7.0/+esm";
 import svgpath from "https://cdn.jsdelivr.net/npm/svgpath@2.6.0/+esm";
+import { createWorker } from "https://cdn.jsdelivr.net/npm/emoji-particle@0.0.4/+esm";
 
 const htmlLang = document.documentElement.lang;
 const ttsLang = getTTSLang(htmlLang);
+const emojiParticle = initEmojiParticle();
 let correctCount = 0;
 let audioContext;
 const audioBufferCache = {};
@@ -122,6 +124,30 @@ function speak(text) {
   msg.lang = ttsLang;
   speechSynthesis.speak(msg);
   return msg;
+}
+
+function initEmojiParticle() {
+  const canvas = document.createElement("canvas");
+  Object.assign(canvas.style, {
+    position: "fixed",
+    pointerEvents: "none",
+    top: "0px",
+    left: "0px",
+  });
+  canvas.width = document.documentElement.clientWidth;
+  canvas.height = document.documentElement.clientHeight;
+  document.body.appendChild(canvas);
+
+  const offscreen = canvas.transferControlToOffscreen();
+  const worker = createWorker();
+  worker.postMessage({ type: "init", canvas: offscreen }, [offscreen]);
+
+  globalThis.addEventListener("resize", () => {
+    const width = document.documentElement.clientWidth;
+    const height = document.documentElement.clientHeight;
+    worker.postMessage({ type: "resize", width, height });
+  });
+  return { canvas, offscreen, worker };
 }
 
 function getRandomInt(min, max) {
@@ -385,9 +411,31 @@ function setCorrectPiece(island) {
   correctCount += 1;
   if (correctCount == stateNames.length) {
     playAudio("correctAll");
+    for (let i = 0; i < 10; i++) {
+      emojiParticle.worker.postMessage({
+        type: "spawn",
+        options: {
+          particleType: "popcorn",
+          originX: Math.random() * emojiParticle.canvas.width,
+          originY: Math.random() * emojiParticle.canvas.height,
+        },
+      });
+    }
     addScoreText();
   } else {
     playAudio("correct", 0.3);
+    if (correctCount % 5 === 0) {
+      for (let i = 0; i < Math.ceil(correctCount / 5); i++) {
+        emojiParticle.worker.postMessage({
+          type: "spawn",
+          options: {
+            particleType: "popcorn",
+            originX: Math.random() * emojiParticle.canvas.width,
+            originY: Math.random() * emojiParticle.canvas.height,
+          },
+        });
+      }
+    }
   }
   const id = getStateId(island);
   const stateName = stateNames[id];
