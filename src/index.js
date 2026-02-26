@@ -5,7 +5,7 @@ import {
   Rect,
   Text,
   util,
-} from "https://cdn.jsdelivr.net/npm/fabric@7.1.0/+esm";
+} from "https://cdn.jsdelivr.net/npm/fabric@7.2.0/+esm";
 import svgpath from "https://cdn.jsdelivr.net/npm/svgpath@2.6.0/+esm";
 import { createWorker } from "https://cdn.jsdelivr.net/npm/emoji-particle@0.0.4/+esm";
 
